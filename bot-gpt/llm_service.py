@@ -7,9 +7,8 @@ import os
 from typing import List, Dict
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain.memory import ConversationBufferWindowMemory
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.schema import HumanMessage, AIMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage
 
 # Load environment variables
 load_dotenv()
@@ -35,16 +34,13 @@ def get_llm():
     )
 
 
-def create_memory(k: int = 10) -> ConversationBufferWindowMemory:
+def create_sliding_window(k: int = 10):
     """
-    Create a ConversationBufferWindowMemory that keeps last k messages.
+    Create sliding window configuration for keeping last k messages.
     This implements the sliding window for context management.
+    Returns the window size for use in format_messages_for_memory.
     """
-    return ConversationBufferWindowMemory(
-        k=k,
-        return_messages=True,
-        memory_key="chat_history"
-    )
+    return k
 
 
 def format_messages_for_memory(messages: List[Dict]) -> List:

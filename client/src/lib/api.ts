@@ -43,8 +43,28 @@ export async function sendMessage(
   const res = await fetch(`${API_BASE}/conversations/${conversationId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role: "user", content, tokens_used: 0 }),
+    body: JSON.stringify({ content }),
   });
   if (!res.ok) throw new Error("Failed to send message");
-  return res.json();
+  
+  const data = await res.json();
+  
+  return {
+    userMessage: data.userMessage || {
+      id: crypto.randomUUID(),
+      conversation_id: conversationId,
+      role: "user",
+      content: content,
+      tokens_used: 0,
+      timestamp: new Date().toISOString()
+    },
+    aiMessage: data.aiMessage || {
+      id: crypto.randomUUID(),
+      conversation_id: conversationId,
+      role: "assistant",
+      content: data.response || "No response",
+      tokens_used: 0,
+      timestamp: new Date().toISOString()
+    }
+  };
 }
