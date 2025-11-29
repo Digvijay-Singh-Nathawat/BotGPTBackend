@@ -12,7 +12,6 @@ A conversational AI chatbot application with a Python FastAPI backend and React 
 - **Clean UI** - Modern React-based chat interface with real-time updates
 - **Plain Text Responses** - AI responses without markdown formatting or asterisks
 - **Docker Ready** - Production-ready Docker configuration included
-- **Fully Tested** - Comprehensive unit tests and CI/CD pipeline
 
 ## Tech Stack
 
@@ -33,11 +32,6 @@ A conversational AI chatbot application with a Python FastAPI backend and React 
 - **TailwindCSS** - Utility-first CSS framework
 - **Radix UI** - Headless component library
 - **Wouter** - Client-side routing
-
-### Testing & CI/CD
-- **pytest** - Python testing framework
-- **pytest-cov** - Code coverage reporting
-- **GitHub Actions** - Continuous integration pipeline
 
 ## Installation
 
@@ -76,68 +70,6 @@ A conversational AI chatbot application with a Python FastAPI backend and React 
    - Frontend: http://localhost:5000
    - Backend: http://localhost:8000
 
-## 🧪 Testing
-
-### Run Tests Locally
-
-Install testing dependencies:
-```bash
-pip install -r bot-gpt/requirements.txt
-```
-
-Run all tests:
-```bash
-pytest tests/ -v
-```
-
-Run tests with coverage report:
-```bash
-pytest tests/ -v --cov=bot-gpt --cov-report=html --cov-report=term-missing
-```
-
-This generates an HTML coverage report in `htmlcov/index.html`
-
-### Test Structure
-
-The test suite includes 5+ test functions covering:
-
-1. **test_health_endpoint()** - Verifies `/health` endpoint returns status 200 and "healthy" response
-2. **test_create_conversation()** - Tests creating new conversations with messages via `POST /conversations`
-3. **test_list_conversations()** - Tests listing all user conversations via `GET /conversations`
-4. **test_get_conversation()** - Tests retrieving specific conversation with message history via `GET /conversations/{id}`
-5. **test_delete_conversation()** - Tests deleting conversations and verifying 404 on subsequent access
-6. **test_invalid_conversation_id()** - Tests error handling for non-existent conversations
-
-### Continuous Integration
-
-GitHub Actions automatically runs tests on:
-- Push to `main`, `master`, or `develop` branches
-- Pull requests to `main` or `master`
-
-#### Setup GitHub Secrets
-
-To enable CI/CD, add your GROQ API key to GitHub:
-
-1. Go to your repository on GitHub
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Add secret named `GROQ_API_KEY` with your API key value
-5. Click **Add secret**
-
-#### View Test Results
-
-1. Push code to your repository
-2. Go to **Actions** tab in your GitHub repository
-3. Click on the latest workflow run
-4. View test output and coverage reports
-5. Look for ✅ (passing) or ❌ (failing) indicators
-
-The CI pipeline automatically:
-- Sets up Python 3.11 environment
-- Installs dependencies from requirements.txt
-- Runs pytest with coverage reporting
-- Uploads coverage to Codecov (optional)
-
 ## Docker Deployment
 
 ### Building the Docker Image
@@ -154,6 +86,14 @@ docker build -t bot-gpt-backend .
 docker run -p 8000:8000 \
   -e GROQ_API_KEY=your_groq_api_key_here \
   bot-gpt-backend
+```
+
+### Docker Compose (Optional)
+
+For easier multi-service deployment:
+
+```bash
+docker-compose up
 ```
 
 ### Docker Features
@@ -219,11 +159,6 @@ For production environments:
 ├── server/                    # Node.js server
 │   ├── index.ts              # Express server and Python process manager
 │   └── routes.ts             # API route definitions
-├── tests/                     # Unit tests
-│   ├── __init__.py           # Test package initialization
-│   └── test_api.py           # API endpoint tests
-├── .github/workflows/         # GitHub Actions CI/CD
-│   └── ci.yml                # Continuous integration pipeline
 ├── Dockerfile                 # Docker configuration
 ├── .dockerignore              # Docker build context exclusions
 ├── package.json              # Project configuration
@@ -369,20 +304,13 @@ This creates optimized production builds for both frontend and backend.
 - Increase health check timeout in Dockerfile if needed
 - Check application logs: `docker logs <container_id>`
 
-### Tests failing in CI/CD
-- Ensure GROQ_API_KEY GitHub secret is configured
-- Check test logs in GitHub Actions
-- Run tests locally with `pytest -v` to debug
-- Verify all dependencies are in requirements.txt
-
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Write or update tests to cover your changes
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
@@ -395,7 +323,6 @@ For issues and questions:
 - Review backend logs in the terminal
 - Check browser console for frontend errors
 - For Docker issues: Check container logs with `docker logs`
-- For test failures: Run `pytest -v` locally and check GitHub Actions logs
 
 ## Acknowledgments
 
@@ -405,4 +332,3 @@ For issues and questions:
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
 - [React](https://react.dev/) - UI library
 - [Docker](https://www.docker.com/) - Containerization platform
-- [pytest](https://pytest.org/) - Python testing framework

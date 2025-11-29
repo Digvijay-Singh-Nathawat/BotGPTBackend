@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["cargo", "libiconv", "libxcrypt", "python312Packages.pytest_7", "rustc"]
+packages = ["libxcrypt"]
 
 [deployment]
 deploymentTarget = "autoscale"
