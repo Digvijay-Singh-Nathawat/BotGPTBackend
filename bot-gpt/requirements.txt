@@ -2,12 +2,13 @@ fastapi==0.104.1
 uvicorn==0.24.0
 sqlalchemy==2.0.23
 python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-core==2.14.1
 langchain==0.0.325
 langchain-groq==0.0.1
 langgraph==0.0.28
 langchain-community==0.0.7
 groq==0.4.2
-pydantic==2.5.0
 
 # Testing dependencies
 pytest==7.4.0
