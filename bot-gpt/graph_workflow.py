@@ -11,7 +11,7 @@ from langgraph.graph import StateGraph, START, END
 from sqlalchemy.orm import Session
 
 from database import get_messages, create_message, update_conversation_title, get_conversation
-from llm_service import generate_response_sync
+from llm_service import generate_response_sync, clean_response
 
 
 # Define the state that flows through the graph
@@ -79,6 +79,9 @@ def call_llm(state: ConversationState) -> ConversationState:
             user_message=state["user_message"],
             conversation_history=state["messages"]
         )
+        
+        # Clean up response by removing asterisks and markdown
+        response = clean_response(response)
         
         print(f"[call_llm] Generated response: {response[:50]}...")
         

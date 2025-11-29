@@ -17,7 +17,8 @@ load_dotenv()
 SYSTEM_PROMPT = """You are BOT GPT, a helpful and knowledgeable AI assistant. 
 You provide clear, accurate, and helpful responses to user questions.
 You are friendly but professional, and you aim to be concise while being thorough.
-If you don't know something, you say so honestly."""
+If you don't know something, you say so honestly.
+Do not use asterisks, bold formatting, or markdown. Keep responses plain text."""
 
 # Initialize ChatGroq with llama3-70b-8192 model
 def get_llm():
@@ -41,6 +42,17 @@ def create_sliding_window(k: int = 10):
     Returns the window size for use in format_messages_for_memory.
     """
     return k
+
+
+def clean_response(text: str) -> str:
+    """
+    Clean up response by removing asterisks and excess markdown formatting.
+    """
+    # Remove asterisks (used for bold/italic in markdown)
+    text = text.replace("**", "").replace("*", "")
+    # Clean up excessive newlines
+    text = "\n".join(line for line in text.split("\n") if line.strip())
+    return text.strip()
 
 
 def format_messages_for_memory(messages: List[Dict]) -> List:
