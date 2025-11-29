@@ -46,7 +46,7 @@ class Conversation(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     mode = Column(String(20), default="open")  # "open" or "rag"
     title = Column(String(255), default="New Conversation")
-    metadata = Column(JSON, default=dict)
+    extra_data = Column(JSON, default=dict)  # Renamed from 'metadata' (reserved)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
