@@ -295,6 +295,60 @@ async def add_message(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Stream message responses
+@app.post("/conversations/{conversation_id}/messages/stream")
+async def add_message_stream(
+    conversation_id: str,
+    request: MessageRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Stream a message response using Server-Sent Events format.
+    """
+    from fastapi.responses import StreamingResponse
+    from llm_service import stream_response_with_history
+    
+    # Check conversation exists
+    conv = get_conversation(db, conversation_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    try:
+        # Save user message to DB
+        create_message(db, conversation_id, "user", request.message)
+        
+        # Get conversation history
+        messages = get_messages(db, conversation_id)
+        history = [{"role": msg.role, "content": msg.content} for msg in messages[:-1]]
+        
+        # Stream the response
+        async def event_generator():
+            try:
+                async for token in stream_response_with_history(request.message, history):
+                    yield f"data: {json.dumps({'token': token})}\n\n"
+                
+                # Save AI response to DB
+                # We'll collect full response in another approach
+                yield "data: [DONE]\n\n"
+                
+                # Get the full response by making another call
+                response = run_conversation_workflow(
+                    db=db,
+                    conversation_id=conversation_id,
+                    user_message=request.message,
+                    skip_user_msg=True
+                )
+            except Exception as e:
+                print(f"Stream error: {e}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+        
+    except Exception as e:
+        print(f"Error streaming message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Delete conversation
 @app.delete("/conversations/{conversation_id}")
 async def delete_conv(

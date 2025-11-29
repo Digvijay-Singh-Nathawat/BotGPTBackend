@@ -90,16 +90,57 @@ export default function ChatPage() {
     try {
       setIsTyping(true);
 
-      // Send message and get both user and AI response
-      const { userMessage, aiMessage } = await api.sendMessage(activeConversation.id, content);
-      
+      // Add user message immediately to UI
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        conversation_id: activeConversation.id,
+        role: "user",
+        content: content,
+        tokens_used: 0,
+        timestamp: new Date().toISOString()
+      };
+
       setConversations(prev =>
         prev.map(c =>
           c.id === activeId
-            ? { ...c, messages: [...c.messages, userMessage, aiMessage], mode }
+            ? { ...c, messages: [...c.messages, userMessage], mode }
             : c
         )
       );
+
+      // Send message and stream AI response
+      const aiMessageId = crypto.randomUUID();
+      let aiContent = "";
+
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === activeId
+            ? { ...c, messages: [...c.messages, {
+                id: aiMessageId,
+                conversation_id: activeConversation.id,
+                role: "assistant",
+                content: "",
+                tokens_used: 0,
+                timestamp: new Date().toISOString()
+              }] }
+            : c
+        )
+      );
+
+      // Stream the response
+      const { aiMessage } = await api.sendMessageStream(activeConversation.id, content, (chunk) => {
+        aiContent += chunk;
+        setConversations(prev =>
+          prev.map(c =>
+            c.id === activeId
+              ? { ...c, messages: c.messages.map(m => 
+                  m.id === aiMessageId ? { ...m, content: aiContent } : m
+                ) }
+              : c
+          )
+        );
+      });
+      
     } catch (error) {
       console.error("Error:", error);
       toast({

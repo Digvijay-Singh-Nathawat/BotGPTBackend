@@ -104,6 +104,49 @@ async def generate_response(
         raise
 
 
+async def stream_response_with_history(
+    user_message: str,
+    conversation_history: List[Dict]
+):
+    """
+    Stream a response token by token using GROQ via LangChain.
+    
+    Args:
+        user_message: The current user message
+        conversation_history: List of previous messages [{"role": "user/assistant", "content": "..."}]
+    
+    Yields:
+        Individual tokens from the response
+    """
+    try:
+        llm = get_llm()
+        
+        # Create the prompt template with system message and chat history
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", SYSTEM_PROMPT),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{input}")
+        ])
+        
+        # Format the conversation history (last 10 messages only)
+        chat_history = format_messages_for_memory(conversation_history)
+        
+        # Create the chain
+        chain = prompt | llm
+        
+        # Stream the response
+        async for chunk in chain.astream({
+            "chat_history": chat_history,
+            "input": user_message
+        }):
+            if chunk.content:
+                yield chunk.content
+        
+    except Exception as e:
+        print(f"Error streaming response: {e}")
+        raise
+
+
 def generate_response_sync(
     user_message: str,
     conversation_history: List[Dict]
