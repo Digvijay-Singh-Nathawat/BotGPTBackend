@@ -11,17 +11,19 @@ A conversational AI chatbot application with a Python FastAPI backend and React 
 - **Persistent Storage** - SQLite database for storing conversations and messages
 - **Clean UI** - Modern React-based chat interface with real-time updates
 - **Plain Text Responses** - AI responses without markdown formatting or asterisks
+- **Docker Ready** - Production-ready Docker configuration included
 
 ## Tech Stack
 
 ### Backend
-- **Python 3.9+**
+- **Python 3.11**
 - **FastAPI** - High-performance async web framework
 - **LangChain** - LLM application framework
 - **LangGraph** - Graph-based workflow orchestration
 - **ChatGroq** - GROQ API integration for Llama models
 - **SQLAlchemy** - ORM for database operations
 - **SQLite** - Lightweight database
+- **Uvicorn** - ASGI web server
 
 ### Frontend
 - **React 18** - UI library
@@ -35,8 +37,9 @@ A conversational AI chatbot application with a Python FastAPI backend and React 
 
 ### Prerequisites
 - Node.js 16+ and npm
-- Python 3.9+
+- Python 3.11+
 - GROQ API key
+- Docker (optional, for containerized deployment)
 
 ### Setup
 
@@ -66,6 +69,56 @@ A conversational AI chatbot application with a Python FastAPI backend and React 
    The application will start on:
    - Frontend: http://localhost:5000
    - Backend: http://localhost:8000
+
+## Docker Deployment
+
+### Building the Docker Image
+
+```bash
+# Build the FastAPI backend image
+docker build -t bot-gpt-backend .
+```
+
+### Running with Docker
+
+```bash
+# Run the container with environment variable
+docker run -p 8000:8000 \
+  -e GROQ_API_KEY=your_groq_api_key_here \
+  bot-gpt-backend
+```
+
+### Docker Compose (Optional)
+
+For easier multi-service deployment:
+
+```bash
+docker-compose up
+```
+
+### Docker Features
+
+The provided Dockerfile includes:
+
+- **Multi-stage build** - Smaller final image size
+- **Python 3.11-slim base** - Lightweight base image
+- **Non-root user** - Enhanced security (runs as `appuser`)
+- **Layer caching** - Installs requirements first for faster rebuilds
+- **Health checks** - Automatic container health monitoring
+- **Environment variables** - Optimized Python runtime settings
+  - `PYTHONDONTWRITEBYTECODE=1` - No `.pyc` files
+  - `PYTHONUNBUFFERED=1` - Real-time log output
+
+### Production Deployment
+
+For production environments:
+
+1. Use a managed container service (Docker Hub, ECR, GCR, etc.)
+2. Store secrets using environment variables or secrets manager
+3. Use reverse proxy (Nginx) for SSL/TLS
+4. Configure persistent volume for database backups
+5. Set resource limits and health checks
+6. Use container orchestration (Kubernetes, Docker Swarm) for scaling
 
 ## Usage
 
@@ -106,7 +159,10 @@ A conversational AI chatbot application with a Python FastAPI backend and React 
 ├── server/                    # Node.js server
 │   ├── index.ts              # Express server and Python process manager
 │   └── routes.ts             # API route definitions
-└── package.json              # Project configuration
+├── Dockerfile                 # Docker configuration
+├── .dockerignore              # Docker build context exclusions
+├── package.json              # Project configuration
+└── README.md                 # This file
 ```
 
 ## Architecture
@@ -167,22 +223,26 @@ Response sent to Frontend
 ### Messages
 
 - `POST /api/conversations/{id}/messages` - Send message and get response
-- `POST /conversations/{id}/messages/stream` - Stream response (experimental)
+
+### Health
+
+- `GET /health` - Health check endpoint (used by Docker health checks)
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `GROQ_API_KEY` | API key for GROQ service | Yes |
-| `DATABASE_URL` | Database connection string | No (defaults to SQLite) |
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `GROQ_API_KEY` | API key for GROQ service | Yes | - |
+| `DATABASE_URL` | Database connection string | No | SQLite |
+| `PORT` | Backend server port | No | 8000 |
 
 ### LLM Settings
 
 Edit `bot-gpt/llm_service.py` to adjust:
-- **Model**: `llama-3.3-70b-versatile` (line 34)
-- **Temperature**: `0.7` (line 35) - Controls response creativity
+- **Model**: `llama-3.3-70b-versatile` (line 34) - Can use other GROQ models
+- **Temperature**: `0.7` (line 35) - Controls response creativity (0.0-2.0)
 - **Max Tokens**: `1024` (line 36) - Maximum response length
 
 ## Running in Development
@@ -192,9 +252,11 @@ Edit `bot-gpt/llm_service.py` to adjust:
 npm run dev:client
 ```
 
-### Backend Only
+### Backend Only (requires manual Python setup)
 ```bash
-npm run dev:server
+cd bot-gpt
+pip install -r requirements.txt
+python main.py
 ```
 
 ### Full Stack
@@ -214,7 +276,8 @@ This creates optimized production builds for both frontend and backend.
 
 ### "GROQ_API_KEY not set"
 - Ensure you've created a `.env` file with your GROQ API key
-- Restart the development server after adding the key
+- For Docker: Pass the key as environment variable: `-e GROQ_API_KEY=your_key`
+- Restart the development server or container after adding the key
 
 ### Empty AI responses
 - Check that the GROQ API key is valid
@@ -230,6 +293,16 @@ This creates optimized production builds for both frontend and backend.
 - Clear browser cache (Ctrl+Shift+Delete or Cmd+Shift+Delete)
 - Restart the development server
 - Check that both frontend (port 5000) and backend (port 8000) are running
+
+### Docker container exits immediately
+- Check logs: `docker logs <container_id>`
+- Ensure GROQ_API_KEY is provided
+- Verify port 8000 is not already in use
+
+### Docker health check failing
+- Backend may be starting slower than expected
+- Increase health check timeout in Dockerfile if needed
+- Check application logs: `docker logs <container_id>`
 
 ## Contributing
 
@@ -249,6 +322,7 @@ For issues and questions:
 - Check the troubleshooting section above
 - Review backend logs in the terminal
 - Check browser console for frontend errors
+- For Docker issues: Check container logs with `docker logs`
 
 ## Acknowledgments
 
@@ -257,3 +331,4 @@ For issues and questions:
 - [GROQ](https://groq.com/) - Fast LLM inference
 - [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
 - [React](https://react.dev/) - UI library
+- [Docker](https://www.docker.com/) - Containerization platform

@@ -1,0 +1,62 @@
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# Test and coverage
+.pytest_cache/
+.tox/
+htmlcov/
+.coverage
+.coverage.*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# Node (for development only)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Documentation
+docs/
+.sphinx/
