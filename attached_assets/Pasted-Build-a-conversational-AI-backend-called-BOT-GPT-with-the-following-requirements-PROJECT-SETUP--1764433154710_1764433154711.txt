@@ -1,0 +1,139 @@
+Build a conversational AI backend called "BOT GPT" with the following requirements:
+
+PROJECT SETUP:
+- Use Python with FastAPI framework
+- Use SQLite database (simple, no Docker needed)
+- Integrate with GROQ API for LLM (I will provide the API key)
+- Use LangChain and LangGraph for conversation management
+- Keep it simple and interview-level code quality
+
+CORE FEATURES TO IMPLEMENT:
+
+1. DATABASE SCHEMA (SQLite with SQLAlchemy):
+   - users table: id, email, created_at
+   - conversations table: id, user_id, mode (open/rag), created_at, updated_at, metadata
+   - messages table: id, conversation_id, role (user/assistant), content, timestamp, tokens_used
+   
+2. REST API ENDPOINTS (FastAPI):
+   POST /conversations
+   - Create new conversation with first message
+   - Request body: {"user_id": 1, "message": "Hello", "mode": "open"}
+   - Response: {"conversation_id": "uuid", "response": "AI reply"}
+   
+   GET /conversations?user_id=1
+   - List all conversations for a user
+   
+   GET /conversations/{conversation_id}
+   - Get full conversation history with all messages
+   
+   POST /conversations/{conversation_id}/messages
+   - Add new message to existing conversation
+   - Request body: {"message": "Follow-up question"}
+   - Response: {"response": "AI reply"}
+   
+   DELETE /conversations/{conversation_id}
+   - Delete conversation and all its messages
+
+3. LANGCHAIN + GROQ INTEGRATION:
+   - Use ChatGroq from langchain_groq
+   - Use ConversationBufferWindowMemory (keep last 10 messages)
+   - Model: "llama3-70b-8192"
+   - Simple prompt template with system message
+
+4. LANGGRAPH STATE MACHINE:
+   - Create a simple state graph with these nodes:
+     * process_message: Load conversation history
+     * call_llm: Call GROQ API with context
+     * save_response: Save to database
+   - State should track: conversation_id, messages, current_response
+
+5. CONTEXT MANAGEMENT:
+   - Keep only last 10 messages in memory (sliding window)
+   - If conversation has more than 10 messages, load only recent 10 for LLM context
+   - Store all messages in DB but send limited context to API
+
+6. PROJECT STRUCTURE:
+bot-gpt/
+├── main.py              # FastAPI app with all endpoints
+├── database.py          # SQLAlchemy models and DB setup
+├── llm_service.py       # LangChain + GROQ integration
+├── graph_workflow.py    # LangGraph state machine
+├── requirements.txt     # All dependencies
+├── .env.example         # Example env file
+└── README.md            # Setup instructions
+
+7. REQUIREMENTS.txt should include:
+   fastapi
+   uvicorn
+   sqlalchemy
+   langchain
+   langchain-groq
+   langgraph
+   python-dotenv
+   pydantic
+
+8. ERROR HANDLING:
+   - Handle GROQ API failures gracefully
+   - Return proper HTTP status codes (200, 404, 500)
+   - Add try-catch blocks for DB operations
+   - Add try-catch for LLM API calls
+
+9. SIMPLE FEATURES (No complexity):
+   - Add a /health endpoint that returns {"status": "healthy"}
+   - Add basic logging with print statements
+   - Add conversation metadata (created_at, updated_at)
+   - Track token usage in messages table (can be 0 for now)
+
+10. README.md should include:
+    - Setup instructions
+    - How to get GROQ API key
+    - How to run the project
+    - API endpoint examples with curl commands
+    - Environment variables needed
+
+IMPORTANT CONSTRAINTS:
+- Keep code simple and readable (interview-level, not production)
+- Use SQLite (no PostgreSQL or Docker)
+- No RAG implementation (just basic chat)
+- No embeddings or vector databases
+- No authentication/authorization (keep it simple)
+- No frontend (API only)
+- Use .env file for GROQ_API_KEY
+- Add comments explaining key parts
+- Use type hints in Python functions
+
+CODE QUALITY:
+- Clean, modular code
+- Separation of concerns (DB, API, LLM logic separate)
+- Use async/await in FastAPI endpoints
+- Proper HTTP methods (POST for create, GET for read, DELETE for delete)
+- Return JSON responses with proper structure
+
+TESTING:
+- Create a simple test_api.py file with 2-3 basic tests using pytest
+- Test: Create conversation
+- Test: Get conversation by ID
+- Test: List conversations
+
+DO NOT IMPLEMENT:
+- RAG mode (just mention it's a future feature in README)
+- Document upload
+- User authentication
+- Deployment configurations
+- Complex error recovery
+- Monitoring/observability
+- Caching layer
+
+Start by creating the project structure, then implement in this order:
+1. Database models and setup
+2. FastAPI basic app with health endpoint
+3. LangChain + GROQ integration
+4. LangGraph simple workflow
+5. API endpoints one by one
+6. Basic tests
+7. README with setup instructions
+
+Create a .env.example file with:
+GROQ_API_KEY=your_groq_api_key_here
+
+Make sure the code is well-commented and easy to understand for someone reviewing it in an interview setting.
