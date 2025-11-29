@@ -1,101 +1,151 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ChatArea } from "@/components/layout/ChatArea";
-import { MOCK_CONVERSATIONS, Conversation, Message } from "@/lib/mockData";
+import { Conversation, Message } from "@/lib/mockData";
+import { generateMockResponse } from "@/lib/mockResponses";
 import { useToast } from "@/hooks/use-toast";
+import * as api from "@/lib/api";
 
 export default function ChatPage() {
-  const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
-  const [activeId, setActiveId] = useState<string>(MOCK_CONVERSATIONS[0].id);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const activeConversation = conversations.find(c => c.id === activeId) || conversations[0];
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await api.initUser();
+        const convs = await api.listConversations();
+        setConversations(convs);
+        if (convs.length > 0) {
+          setActiveId(convs[0].id);
+        } else {
+          // Create initial conversation if none exist
+          const newConv = await api.createConversation("open");
+          setConversations([newConv]);
+          setActiveId(newConv.id);
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load conversations",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  const activeConversation = conversations.find(c => c.id === activeId);
 
   const handleSelectConversation = (id: string) => {
     setActiveId(id);
   };
 
-  const handleNewChat = () => {
-    const newId = `conv_${Date.now()}`;
-    const newConv: Conversation = {
-      id: newId,
-      user_id: 1,
-      mode: "open",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      title: "New Conversation",
-      messages: []
-    };
-    setConversations([newConv, ...conversations]);
-    setActiveId(newId);
+  const handleNewChat = async () => {
+    try {
+      const newConv = await api.createConversation("open");
+      setConversations([newConv, ...conversations]);
+      setActiveId(newConv.id);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create conversation",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteConversation = (id: string) => {
-    setConversations(prev => prev.filter(c => c.id !== id));
-    if (activeId === id) {
-      const remaining = conversations.filter(c => c.id !== id);
-      if (remaining.length > 0) {
-        setActiveId(remaining[0].id);
-      } else {
-        // Create a new one if all deleted
-        handleNewChat();
+  const handleDeleteConversation = async (id: string) => {
+    try {
+      await api.deleteConversation(id);
+      setConversations(prev => prev.filter(c => c.id !== id));
+      if (activeId === id) {
+        const remaining = conversations.filter(c => c.id !== id);
+        if (remaining.length > 0) {
+          setActiveId(remaining[0].id);
+        } else {
+          handleNewChat();
+        }
       }
+      toast({
+        description: "Conversation deleted",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete conversation",
+        variant: "destructive",
+      });
     }
-    toast({
-      description: "Conversation deleted",
-    });
   };
 
   const handleSendMessage = async (content: string, mode: "open" | "rag") => {
     if (!activeConversation) return;
 
-    // Add user message
-    const userMsg: Message = {
-      id: `msg_${Date.now()}`,
-      conversation_id: activeConversation.id,
-      role: "user",
-      content,
-      timestamp: new Date().toISOString(),
-      tokens_used: 0
-    };
-
-    const updatedConv = {
-      ...activeConversation,
-      messages: [...activeConversation.messages, userMsg],
-      updated_at: new Date().toISOString(),
-      mode: mode // Update mode if changed
-    };
-
-    // Update state immediately
-    setConversations(prev => prev.map(c => c.id === activeId ? updatedConv : c));
-    setIsTyping(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMsg: Message = {
-        id: `msg_${Date.now() + 1}`,
-        conversation_id: activeConversation.id,
-        role: "assistant",
-        content: `This is a mock response simulating the backend.\n\nYou asked: "${content}"\n\nIn the real implementation, this would call the GROQ API via LangChain.`,
-        timestamp: new Date().toISOString(),
-        tokens_used: Math.floor(Math.random() * 100) + 20
-      };
-
-      const finalConv = {
-        ...updatedConv,
-        messages: [...updatedConv.messages, aiMsg]
-      };
+    try {
+      // Add user message
+      const userMsg = await api.addMessage(activeConversation.id, "user", content);
       
-      // Update title if it's the first message
-      if (activeConversation.messages.length === 0) {
-        finalConv.title = content.slice(0, 30) + (content.length > 30 ? "..." : "");
-      }
+      setConversations(prev => 
+        prev.map(c => c.id === activeId 
+          ? {...c, messages: [...c.messages, userMsg]}
+          : c
+        )
+      );
+      
+      setIsTyping(true);
 
-      setConversations(prev => prev.map(c => c.id === activeId ? finalConv : c));
-      setIsTyping(false);
-    }, 1500);
+      // Simulate AI response
+      setTimeout(async () => {
+        try {
+          const aiContent = generateMockResponse(content);
+          const aiMsg = await api.addMessage(
+            activeConversation.id,
+            "assistant",
+            aiContent
+          );
+
+          setConversations(prev =>
+            prev.map(c =>
+              c.id === activeId
+                ? { ...c, messages: [...c.messages, aiMsg], mode }
+                : c
+            )
+          );
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to save response",
+            variant: "destructive",
+          });
+        }
+        setIsTyping(false);
+      }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 rounded-lg bg-primary mx-auto animate-pulse" />
+          <p className="text-sm text-muted-foreground">Loading BOT GPT...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-full bg-background text-foreground overflow-hidden">
@@ -107,15 +157,19 @@ export default function ChatPage() {
         onDeleteConversation={handleDeleteConversation}
       />
       <main className="flex-1 h-full relative">
-        <ChatArea 
-          messages={activeConversation?.messages || []}
-          onSendMessage={handleSendMessage}
-          isTyping={isTyping}
-          mode={activeConversation?.mode || "open"}
-          setMode={(mode) => {
-             setConversations(prev => prev.map(c => c.id === activeId ? {...c, mode} : c));
-          }}
-        />
+        {activeConversation && (
+          <ChatArea 
+            messages={activeConversation.messages || []}
+            onSendMessage={handleSendMessage}
+            isTyping={isTyping}
+            mode={activeConversation.mode || "open"}
+            setMode={(mode) => {
+              setConversations(prev => 
+                prev.map(c => c.id === activeId ? {...c, mode} : c)
+              );
+            }}
+          />
+        )}
       </main>
     </div>
   );
