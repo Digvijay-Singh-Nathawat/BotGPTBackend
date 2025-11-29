@@ -4,6 +4,7 @@ A conversational AI backend using LangChain, LangGraph, and GROQ.
 """
 
 import os
+import json
 from typing import Optional, List
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -317,27 +318,23 @@ async def add_message_stream(
         # Save user message to DB
         create_message(db, conversation_id, "user", request.message)
         
-        # Get conversation history
+        # Get conversation history (excluding the user message we just added)
         messages = get_messages(db, conversation_id)
         history = [{"role": msg.role, "content": msg.content} for msg in messages[:-1]]
         
         # Stream the response
+        full_response = ""
         async def event_generator():
+            nonlocal full_response
             try:
                 async for token in stream_response_with_history(request.message, history):
+                    full_response += token
                     yield f"data: {json.dumps({'token': token})}\n\n"
                 
-                # Save AI response to DB
-                # We'll collect full response in another approach
+                # Save the AI response
+                create_message(db, conversation_id, "assistant", full_response)
                 yield "data: [DONE]\n\n"
                 
-                # Get the full response by making another call
-                response = run_conversation_workflow(
-                    db=db,
-                    conversation_id=conversation_id,
-                    user_message=request.message,
-                    skip_user_msg=True
-                )
             except Exception as e:
                 print(f"Stream error: {e}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"

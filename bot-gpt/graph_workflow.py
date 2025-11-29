@@ -180,7 +180,8 @@ conversation_workflow = create_conversation_graph().compile()
 def run_conversation_workflow(
     db: Session,
     conversation_id: str,
-    user_message: str
+    user_message: str,
+    skip_user_msg: bool = False
 ) -> str:
     """
     Run the complete conversation workflow.
@@ -189,6 +190,7 @@ def run_conversation_workflow(
         db: Database session
         conversation_id: ID of the conversation
         user_message: The user's message
+        skip_user_msg: If True, skip saving the user message (already saved)
     
     Returns:
         The AI response
