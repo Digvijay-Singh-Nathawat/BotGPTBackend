@@ -108,38 +108,16 @@ export default function ChatPage() {
         )
       );
 
-      // Send message and stream AI response
-      const aiMessageId = crypto.randomUUID();
-      let aiContent = "";
-
+      // Send message and get AI response
+      const { aiMessage } = await api.sendMessage(activeConversation.id, content);
+      
       setConversations(prev =>
         prev.map(c =>
           c.id === activeId
-            ? { ...c, messages: [...c.messages, {
-                id: aiMessageId,
-                conversation_id: activeConversation.id,
-                role: "assistant",
-                content: "",
-                tokens_used: 0,
-                timestamp: new Date().toISOString()
-              }] }
+            ? { ...c, messages: [...c.messages, aiMessage], mode }
             : c
         )
       );
-
-      // Stream the response
-      const { aiMessage } = await api.sendMessageStream(activeConversation.id, content, (chunk) => {
-        aiContent += chunk;
-        setConversations(prev =>
-          prev.map(c =>
-            c.id === activeId
-              ? { ...c, messages: c.messages.map(m => 
-                  m.id === aiMessageId ? { ...m, content: aiContent } : m
-                ) }
-              : c
-          )
-        );
-      });
       
     } catch (error) {
       console.error("Error:", error);
