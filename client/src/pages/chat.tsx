@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ChatArea } from "@/components/layout/ChatArea";
 import { Conversation, Message } from "@/lib/mockData";
-import { generateMockResponse } from "@/lib/mockResponses";
 import { useToast } from "@/hooks/use-toast";
 import * as api from "@/lib/api";
 
@@ -89,50 +88,27 @@ export default function ChatPage() {
     if (!activeConversation) return;
 
     try {
-      // Add user message
-      const userMsg = await api.addMessage(activeConversation.id, "user", content);
-      
-      setConversations(prev => 
-        prev.map(c => c.id === activeId 
-          ? {...c, messages: [...c.messages, userMsg]}
-          : c
-        )
-      );
-      
       setIsTyping(true);
 
-      // Simulate AI response
-      setTimeout(async () => {
-        try {
-          const aiContent = generateMockResponse(content);
-          const aiMsg = await api.addMessage(
-            activeConversation.id,
-            "assistant",
-            aiContent
-          );
-
-          setConversations(prev =>
-            prev.map(c =>
-              c.id === activeId
-                ? { ...c, messages: [...c.messages, aiMsg], mode }
-                : c
-            )
-          );
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: "Failed to save response",
-            variant: "destructive",
-          });
-        }
-        setIsTyping(false);
-      }, 1500);
+      // Send message and get both user and AI response
+      const { userMessage, aiMessage } = await api.sendMessage(activeConversation.id, content);
+      
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === activeId
+            ? { ...c, messages: [...c.messages, userMessage, aiMessage], mode }
+            : c
+        )
+      );
     } catch (error) {
+      console.error("Error:", error);
       toast({
         title: "Error",
         description: "Failed to send message",
         variant: "destructive",
       });
+    } finally {
+      setIsTyping(false);
     }
   };
 

@@ -36,16 +36,15 @@ export async function deleteConversation(id: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete conversation");
 }
 
-export async function addMessage(
+export async function sendMessage(
   conversationId: string,
-  role: "user" | "assistant",
   content: string
-): Promise<Message> {
+): Promise<{ userMessage: Message; aiMessage: Message }> {
   const res = await fetch(`${API_BASE}/conversations/${conversationId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role, content, tokens_used: 0 }),
+    body: JSON.stringify({ role: "user", content, tokens_used: 0 }),
   });
-  if (!res.ok) throw new Error("Failed to add message");
+  if (!res.ok) throw new Error("Failed to send message");
   return res.json();
 }
